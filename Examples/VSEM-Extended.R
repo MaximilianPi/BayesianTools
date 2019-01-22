@@ -1,5 +1,3 @@
-
-  
 ## This example shows how to run and calibrate the VSEM model 
 
 library(BayesianTools)
@@ -42,22 +40,65 @@ likelihood <- function(par, sum = TRUE){
   else return(sum(llValues))
 }
 
+likelihood(refPars$best[parSel])
+
 # optional, you can also directly provide lower, upper in the createBayesianSetup, see help
 prior <- createUniformPrior(lower = refPars$lower[parSel], 
                             upper = refPars$upper[parSel], best = refPars$best[parSel])
 
 bayesianSetup <- createBayesianSetup(likelihood, prior, names = rownames(refPars)[parSel])
 
-# settings for the sampler, iterations should be increased for real applicatoin
-settings <- list(iterations = 2000, nrChains = 2)
+##########################################################################
+# Sensitity analysis
 
+plotSensitivity <- function(n, ...){
+  lowS = refPars$lower[parSel]
+  upS = refPars$upper[parSel]
+  parSen <- seq(lowS[n], upS[n], len = 20) 
+  refPar <- refPars$best[parSel]
+  post <- rep(NA, 20) 
+  for (i in 1:20){
+    parS <- refPar
+    parS[n] = parSen[i]
+    post[i] = bayesianSetup$posterior$density(parS)
+  }
+  plot(x = parSen, y = post, main = rownames(refPars)[parSel][n], type = "l", col =
+         "red", ...)#, ylim = c(-7500, -7000) abline(v = refPar[n])
+}
+opar <- par(mfrow = c(2,3))
+for (i in 1:6) plotSensitivity(i)
+par(opar)
+
+
+library(sensitivity)
+
+morrisOut <- morris(model = bayesianSetup$posterior$density, factors = rownames(refPars[parSel, ]), r = 200, design = list(type = "oat", levels = 5, grid.jump = 3), binf = refPars$lower[parSel], bsup = refPars$upper[parSel], scale = TRUE)
+par(mfrow=c(1,1))
+plot(morrisOut)
+
+
+# So according to this analysis the most sensitive of the six parameters is Light use efficiency (LUE), and the least sensitive is the residence time of soil organic matter (tauS).
+
+# Now for the unscaled morris, i.e. where we look at the sensitivity for the same amount of numerical change
+
+morrisOutUnscaled <- morris(model = bayesianSetup$posterior$density, factors = rownames(refPars[parSel, ]), r = 200, design = list(type = "oat", levels = 5, grid.jump = 3), binf = refPars$lower[parSel], bsup = refPars$upper[parSel], scale = FALSE)
+plot(morrisOutUnscaled)
+
+
+##########################################################################
+# Model fit
+
+# settings for the sampler, iterations should be increased for real applicatoin
+
+settings <- list(iterations = 10000, nrChains = 2)
 out <- runMCMC(bayesianSetup = bayesianSetup, sampler = "DEzs", settings = settings)
 
-\dontrun{
+## Not run: 
 
 plot(out)
 summary(out)
-marginalPlot(out)
+marginalPlot(out, prior = T)
+correlationPlot(out)
 gelmanDiagnostics(out) # should be below 1.05 for all parameters to demonstrate convergence 
 
 # Posterior predictive simulations
@@ -136,6 +177,7 @@ plotTimeSeriesResults(sampler = out,
 
 
 
-}
+
+## End(Not run)
 
 par(oldpar)
