@@ -25,8 +25,9 @@ marginalPlot(out, type = 'd', singlePanel = TRUE, prior = TRUE)
 ## a certain parameter range
 marginalPlot(out, type = 'v', singlePanel = TRUE, xrange = matrix(rep(c(-5, 5), 3), ncol = 3))
 
-##Further options
-# We can pass arguments to getSample (check ?getSample) and to the density and violin plots
-marginalPlot(out, type = 'v', singlePanel = TRUE, 
-             settings = list(col = c('#FC006299','#00BBAA88')), prior = TRUE)
-marginalPlot(out, type = 'v', singlePanel = TRUE, numSamples = 500)
+
+# We can pass arguments to getSample (check ?getSample)
+marginalPlot(out, singlePanel = TRUE, scale=TRUE, 
+             col = c("red", "blue"), thin = 100)
+marginalPlot(out, singlePanel = TRUE, scale=TRUE, 
+             col = c("red", "blue"), thin = 100, start = 500)
